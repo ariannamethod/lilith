@@ -50,16 +50,18 @@ class Overthinking:
         self.ripple_temperature = 0.95
         self.ripple_tokens = 40
     
-    def generate_ripple(self, user_input: str, response: str, 
+    async def generate_ripple(self, user_input: str, response: str,
                        depth: int = 1) -> Dict[str, str]:
         """
         Generate one meta-ripple.
-        
+
+        ASYNC: Runs in parallel with other emergent processes.
+
         Args:
             user_input: What user said
             response: What Lilith responded
             depth: Ripple depth (1 = first reflection, 2 = reflection on reflection, etc.)
-        
+
         Returns:
             Dictionary with ripple data
         """
@@ -128,29 +130,35 @@ class Overthinking:
         
         return ripple
     
-    def process_interaction(self, user_input: str, response: str,
+    async def process_interaction(self, user_input: str, response: str,
                           store_ripples: bool = True) -> List[Dict[str, str]]:
         """
         Process a full interaction with multiple ripple depths.
-        
+
+        ASYNC: Generates all ripple depths in parallel!
+
         Args:
             user_input: User's message
             response: Lilith's response
             store_ripples: Whether to store in history
-        
+
         Returns:
             List of ripples at different depths
         """
-        ripples = []
-        
-        for depth in range(1, self.max_ripple_depth + 1):
-            ripple = self.generate_ripple(user_input, response, depth)
-            ripples.append(ripple)
-            
-            if store_ripples:
-                self.ripples.append(ripple)
-        
-        return ripples
+        import asyncio
+
+        # Generate all ripples in parallel!
+        ripple_tasks = [
+            self.generate_ripple(user_input, response, depth)
+            for depth in range(1, self.max_ripple_depth + 1)
+        ]
+
+        ripples = await asyncio.gather(*ripple_tasks)
+
+        if store_ripples:
+            self.ripples.extend(ripples)
+
+        return list(ripples)
     
     def get_oscillation_summary(self, last_n: int = 5) -> str:
         """

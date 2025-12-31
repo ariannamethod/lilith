@@ -32,6 +32,10 @@ from phase4_bridges import PhaseBridge, Phase
 from lilith_words import ShardSystem, WordStatsTracker
 from association import AssociationEngine
 
+# Tour 3 imports - Emergence
+from emergence import MoodDrift, MetaController, AssociationMemory
+from emergence import integrate_mood_drift, apply_meta_intervention
+
 
 class LilithChatFull:
     """
@@ -103,7 +107,12 @@ class LilithChatFull:
             self.word_stats = WordStatsTracker(vocab_size)
             self.association_engine = AssociationEngine(vocab_size)
             self.association_engine.set_tokenizer(self.tokenizer)
-            
+
+            # Tour 3: Emergent processes
+            self.mood_drift = MoodDrift()
+            self.meta_controller = MetaController()
+            self.assoc_memory = AssociationMemory(memory_size=50)
+
             # Set baseline vocabulary
             baseline_tokens = list(range(min(1000, vocab_size)))  # Basic tokens
             self.word_stats.set_baseline(baseline_tokens)
@@ -116,6 +125,9 @@ class LilithChatFull:
             self.shard_system = None
             self.word_stats = None
             self.association_engine = None
+            self.mood_drift = None
+            self.meta_controller = None
+            self.assoc_memory = None
         
         # Conversation state
         self.history = []
@@ -172,25 +184,49 @@ class LilithChatFull:
             
             trauma_estimate = 0.5  # Placeholder
             
+            # Collect metrics
+            metrics = {
+                'novelty': shard_stats['mean_novelty'],
+                'new_words': new_words_count,
+                'entropy': novelty_entropy,
+                'shard_growth': shard_stats['active_shards'],
+                'phase': phase_name,
+                'trauma': trauma_estimate,
+                'diversity': vocab_diversity
+            }
+
             # MathBrain observes
             self.mathbrain.observe(
                 user_text=user_input,
                 lilith_reply="",  # Not yet generated
-                metrics={
-                    'novelty': shard_stats['mean_novelty'],
-                    'new_words': new_words_count,
-                    'entropy': novelty_entropy,
-                    'shard_growth': shard_stats['active_shards'],
-                    'phase': phase_name,
-                    'trauma': trauma_estimate,
-                    'diversity': vocab_diversity
-                }
+                metrics=metrics
             )
-            
+
+            # Tour 3: MoodDrift update (emergent emotional state)
+            self.mood_drift.update(metrics)
+
             # MathBrain decides modulation
             modulation = self.mathbrain.decide()
-            inner_state['modulation'] = modulation
+
+            # Tour 3: Apply MoodDrift modulation
+            base_params = {
+                'temperature': modulation['temperature'],
+                'demon1_strength': modulation['demon1_strength'],
+                'demon2_strength': modulation['demon2_strength'],
+                'association_intensity': modulation['association_intensity']
+            }
+            modulation_with_mood = integrate_mood_drift(self.mood_drift, base_params)
+
+            inner_state['modulation'] = modulation_with_mood
+            inner_state['metrics'] = metrics
             
+            # Tour 3: Recall similar associations from memory
+            recall_context = {
+                'phase': phase_name,
+                'turn': self.turn_count
+            }
+            recalled_assocs = self.assoc_memory.recall_similar(recall_context, top_k=2)
+
             # Generate associations (can be async in future)
             shard_novelty = self.shard_system.compute_shard_influence(strength=0.0)
             association = self.association_engine.generate_association(
@@ -199,8 +235,13 @@ class LilithChatFull:
                 shard_novelty=shard_novelty,
                 metrics=self.mathbrain.current_metrics,
                 phase=phase_name,
-                intensity=modulation['association_intensity']
+                intensity=modulation_with_mood['association_intensity']
             )
+
+            # Tour 3: Mix with recalled associations for consistency
+            if recalled_assocs and association:
+                association = f"{association} (echoes: {recalled_assocs[0][:30]}...)"
+
             inner_state['association'] = association
             
             # Store state
@@ -230,6 +271,23 @@ class LilithChatFull:
         # Get modulation from inner state
         if self.enable_leo and 'modulation' in inner_state:
             modulation = inner_state['modulation']
+
+            # Tour 3: Check if MetaController should intervene
+            if 'metrics' in inner_state:
+                should_intervene = self.meta_controller.should_intervene(
+                    self.turn_count,
+                    inner_state['metrics']
+                )
+
+                if should_intervene:
+                    intervention = self.meta_controller.generate_intervention(
+                        self.turn_count,
+                        inner_state['metrics'],
+                        inner_state.get('phase', 'Normal')
+                    )
+                    # Apply intervention to modulation
+                    modulation = apply_meta_intervention(intervention, modulation)
+
             temperature = modulation['temperature']
             alpha1 = modulation['demon1_strength'] * 0.3
             alpha2 = modulation['demon2_strength'] * 0.2
@@ -365,14 +423,14 @@ class LilithChatFull:
         if self.enable_leo:
             async def generate_shadow():
                 if self.metalilith and self.phase_bridge.should_activate_metalilith():
-                    return self.metalilith.generate_shadow_thought(user_input, response)
+                    return await self.metalilith.generate_shadow_thought(user_input, response)
                 return None
-            
+
             async def generate_ripples():
                 if self.overthinking:
                     depth = self.phase_bridge.get_overthinking_depth()
                     self.overthinking.max_ripple_depth = depth
-                    return self.overthinking.process_interaction(user_input, response)
+                    return await self.overthinking.process_interaction(user_input, response)
                 return None
             
             # Run meta-layers in parallel!
@@ -380,12 +438,21 @@ class LilithChatFull:
                 generate_shadow(),
                 generate_ripples()
             )
-            
+
+            # Tour 3: Store association in memory for consistency
+            if 'association' in inner_state and inner_state['association']:
+                assoc_context = {
+                    'phase': self.phase_bridge.current_phase.name,
+                    'turn': self.turn_count,
+                    'user_text': user_input[:50]  # truncate
+                }
+                self.assoc_memory.store(inner_state['association'], assoc_context)
+
             # Auto phase transition
             if self.phase_bridge and len(trauma_scores) > 0:
                 avg_trauma = np.mean(trauma_scores)
                 rationality = self.mathbrain.get_rationality_score() if self.mathbrain else 0.5
-                
+
                 context = {
                     'trauma_score': avg_trauma,
                     'rationality': rationality,
@@ -451,7 +518,22 @@ class LilithChatFull:
         # Tour 2: Enhanced MathBrain report
         if self.enable_leo and self.mathbrain:
             report += self.mathbrain.get_supreme_report() + "\n"
-        
+
+        # Tour 3: MoodDrift report
+        if self.enable_leo and self.mood_drift:
+            report += self.mood_drift.get_mood_report() + "\n"
+
+        # Tour 3: MetaController report
+        if self.enable_leo and self.meta_controller:
+            report += self.meta_controller.get_intervention_report() + "\n"
+
+        # Tour 3: AssociationMemory stats
+        if self.enable_leo and self.assoc_memory:
+            mem_stats = self.assoc_memory.get_memory_stats()
+            report += f"🔮 Association Memory:\n"
+            report += f"   Size: {mem_stats['size']}\n"
+            report += f"   Range: turns {mem_stats['oldest_turn']} to {mem_stats['newest_turn']}\n\n"
+
         # Tour 2: Word cloud and shard stats
         if self.enable_leo and self.shard_system:
             report += self.shard_system.get_shard_report() + "\n"
