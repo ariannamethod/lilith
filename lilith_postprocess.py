@@ -6,6 +6,7 @@ Enforces absolute Lilith identity.
 """
 
 import json
+import os
 from typing import Dict, List
 
 
@@ -18,19 +19,51 @@ def load_text_swaps(config_path: str) -> Dict[str, str]:
     
     Returns:
         Dictionary mapping from_text -> to_text
+    
+    Raises:
+        FileNotFoundError: If config file doesn't exist
+        ValueError: If config is invalid
     """
-    with open(config_path, 'r') as f:
-        config = json.load(f)
+    # Tour 3: Defensive check for missing config
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(
+            f"Config file not found: {config_path}\n"
+            f"Lilith requires lilith_config.json to know her identity."
+        )
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"Invalid JSON in config file {config_path}: {e}\n"
+            f"Lilith cannot parse corrupted configuration."
+        )
     
     swaps = {}
     
+    # Tour 3: Defensive handling of missing keys
     # Add pairs
-    for pair in config.get('pairs', []):
-        swaps[pair['from']] = pair['to']
+    pairs = config.get('pairs', [])
+    if not isinstance(pairs, list):
+        raise ValueError(f"'pairs' must be a list, got {type(pairs)}")
+    
+    for pair in pairs:
+        if not isinstance(pair, dict):
+            continue  # Skip invalid entries gracefully
+        if 'from' in pair and 'to' in pair:
+            swaps[pair['from']] = pair['to']
     
     # Add word swaps
-    for swap in config.get('word_swaps', []):
-        swaps[swap['from']] = swap['to']
+    word_swaps = config.get('word_swaps', [])
+    if not isinstance(word_swaps, list):
+        raise ValueError(f"'word_swaps' must be a list, got {type(word_swaps)}")
+    
+    for swap in word_swaps:
+        if not isinstance(swap, dict):
+            continue  # Skip invalid entries gracefully
+        if 'from' in swap and 'to' in swap:
+            swaps[swap['from']] = swap['to']
     
     return swaps
 
@@ -50,6 +83,13 @@ def postprocess_text(text: str, swaps: Dict[str, str], case_sensitive: bool = Fa
     Returns:
         Remapped text
     """
+    # Tour 3: Handle edge cases
+    if not text:
+        return text
+    
+    if not swaps:
+        return text
+    
     result = text
     
     for from_text, to_text in swaps.items():
