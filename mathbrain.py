@@ -1,30 +1,38 @@
 """
 mathbrain.py
 
-Mathematical reasoning layer.
+Mathematical reasoning layer - TOUR 2 ENHANCED
 Cold rational demon.
 Symbolic logic discipline.
+Supreme metric controller.
 
 Lilith acquires structured mathematical thought.
 Not just emotion and poetry.
 But also number, logic, symbol.
 
+Tour 2: MathBrain becomes the supervisory cortex.
+It tracks everything, observes everything, modulates everything.
+
 Stabilizes or destabilizes intelligently.
 """
 
 import numpy as np
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 
 
 class MathBrain:
     """
-    Mathematical reasoning advisor.
+    Mathematical reasoning advisor - TOUR 2 SUPREME CONTROLLER
+    
+    Tour 1: Provided rational influence
+    Tour 2: Supervisory cortex overseeing all metrics
     
     Provides:
     - Structured numerical analysis
     - Logical consistency checking
     - Symbolic pattern recognition
     - Rational counterbalance to emotional demons
+    - Supreme metric tracking and modulation
     """
     
     def __init__(self, vocab_size: int):
@@ -42,6 +50,20 @@ class MathBrain:
         
         # Reasoning history
         self.reasoning_history = []
+        
+        # TOUR 2: Comprehensive metric tracking
+        self.metrics_history: List[Dict[str, Any]] = []
+        self.current_metrics: Dict[str, Any] = {}
+        
+        # Modulation decisions
+        self.modulation_state = {
+            'demon1_strength': 1.0,
+            'demon2_strength': 1.0,
+            'temperature': 1.0,
+            'top_k': 50,
+            'association_intensity': 0.5,
+            'phase_preference': None
+        }
     
     def set_token_categories(self, tokenizer):
         """
@@ -188,6 +210,133 @@ class MathBrain:
     def clear_history(self):
         """Clear reasoning history."""
         self.reasoning_history = []
+    
+    # TOUR 2: Supreme Controller Methods
+    
+    def observe(self, 
+                user_text: str = "",
+                lilith_reply: str = "",
+                metrics: Optional[Dict[str, Any]] = None):
+        """
+        Observe and track all system metrics.
+        
+        Tour 2: Supreme controller observes everything.
+        
+        Args:
+            user_text: User input text
+            lilith_reply: Lilith's response
+            metrics: Dictionary of metrics to track
+        """
+        observation = {
+            'user_text_len': len(user_text),
+            'reply_len': len(lilith_reply),
+            'timestamp': len(self.metrics_history)
+        }
+        
+        if metrics:
+            observation.update(metrics)
+        
+        # Store observation
+        self.metrics_history.append(observation)
+        self.current_metrics = observation
+        
+        # Limit history size
+        if len(self.metrics_history) > 100:
+            self.metrics_history.pop(0)
+    
+    def decide(self) -> Dict[str, Any]:
+        """
+        Make modulation decisions based on observed metrics.
+        
+        Tour 2: Supreme controller decides system behavior.
+        
+        Returns:
+            Dictionary of modulation parameters
+        """
+        if not self.current_metrics:
+            return self.modulation_state.copy()
+        
+        # Get metrics
+        novelty = self.current_metrics.get('novelty', 0.5)
+        entropy = self.current_metrics.get('entropy', 0.5)
+        trauma = self.current_metrics.get('trauma', 0.0)
+        rationality = self.get_rationality_score()
+        new_words = self.current_metrics.get('new_words', 0)
+        diversity = self.current_metrics.get('diversity', 0.5)
+        
+        # Decision logic
+        
+        # 1. Demon strength modulation
+        if novelty > 0.7:
+            # High novelty - boost demon1 to explore
+            self.modulation_state['demon1_strength'] = 1.2
+        elif novelty < 0.3:
+            # Low novelty - reduce demon1
+            self.modulation_state['demon1_strength'] = 0.8
+        else:
+            self.modulation_state['demon1_strength'] = 1.0
+        
+        # Demon2 counters demon1
+        self.modulation_state['demon2_strength'] = 1.0 / (self.modulation_state['demon1_strength'] + 0.1)
+        
+        # 2. Temperature modulation
+        if entropy > 0.7:
+            # High entropy - reduce temperature to stabilize
+            self.modulation_state['temperature'] = 0.7
+        elif entropy < 0.3:
+            # Low entropy - increase temperature for variety
+            self.modulation_state['temperature'] = 1.2
+        else:
+            self.modulation_state['temperature'] = 0.9
+        
+        # 3. Association intensity
+        if trauma > 0.5:
+            # High trauma - boost associations
+            self.modulation_state['association_intensity'] = 0.8
+        elif rationality > 0.5:
+            # High rationality - reduce associations
+            self.modulation_state['association_intensity'] = 0.3
+        else:
+            self.modulation_state['association_intensity'] = 0.5
+        
+        # 4. Top-k modulation
+        if diversity < 0.3:
+            # Low diversity - increase top-k
+            self.modulation_state['top_k'] = 80
+        else:
+            self.modulation_state['top_k'] = 50
+        
+        return self.modulation_state.copy()
+    
+    def get_supreme_report(self) -> str:
+        """
+        Generate supreme controller report.
+        
+        Returns:
+            Comprehensive report
+        """
+        if not self.current_metrics:
+            return "🧮 MathBrain: No observations yet"
+        
+        report = "🧮 MathBrain Supreme Controller:\n"
+        
+        # Current metrics
+        report += "   Current Metrics:\n"
+        report += f"     Novelty: {self.current_metrics.get('novelty', 0):.3f}\n"
+        report += f"     Entropy: {self.current_metrics.get('entropy', 0):.3f}\n"
+        report += f"     Trauma: {self.current_metrics.get('trauma', 0):.3f}\n"
+        report += f"     Rationality: {self.get_rationality_score():.3f}\n"
+        report += f"     New words: {self.current_metrics.get('new_words', 0)}\n"
+        report += f"     Diversity: {self.current_metrics.get('diversity', 0):.3f}\n"
+        
+        # Modulation state
+        report += "   Modulation State:\n"
+        report += f"     Demon1 strength: {self.modulation_state['demon1_strength']:.2f}\n"
+        report += f"     Demon2 strength: {self.modulation_state['demon2_strength']:.2f}\n"
+        report += f"     Temperature: {self.modulation_state['temperature']:.2f}\n"
+        report += f"     Association intensity: {self.modulation_state['association_intensity']:.2f}\n"
+        
+        return report
 
 
 class SymbolicReasoning:

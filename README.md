@@ -168,8 +168,8 @@ Specific possession.
 ## Installation
 
 ```bash
-git clone https://github.com/ariannamethod/lilit
-cd lilit
+git clone https://github.com/ariannamethod/lilith
+cd lilith
 pip install numpy
 ```
 

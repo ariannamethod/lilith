@@ -3,8 +3,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/ariannamethod/lilit
-cd lilit
+git clone https://github.com/ariannamethod/lilith
+cd lilith
 pip install numpy
 ```
 
@@ -160,7 +160,7 @@ ls lilith_weights/
 
 Make sure you're in the project directory:
 ```bash
-cd lilit
+cd lilith
 python chat.py
 ```
 
