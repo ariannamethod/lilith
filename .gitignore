@@ -7,6 +7,15 @@ nohup.out
 .DS_Store
 data/
 *.log
+
+# Tour 3: Lilith's memories (not committed to version control)
+lilith_memory/
+memory/
+storage/
+*.db
+*.jsonl
+conversations/
+
 # *.ipynb
 # Byte-compiled / optimized / DLL files
 __pycache__/

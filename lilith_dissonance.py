@@ -5,9 +5,12 @@ Two MLP demons that possess the logits layer.
 Pure NumPy. No PyTorch. No JAX.
 Frozen transformer stays sacred.
 Chaos injected above.
+
+Tour 3: Enhanced with error handling and validation.
 """
 
 import json
+import os
 import numpy as np
 from typing import List, Dict, Tuple, Optional
 
@@ -249,49 +252,100 @@ class CounterDissonanceMLP:
 
 def load_config(config_path: str, tokenizer) -> Tuple[List[int], List[int], List[int]]:
     """
-    Load lilith_config.json and map words to token IDs.
+    Load demon configuration.
     
     Args:
         config_path: Path to lilith_config.json
-        tokenizer: Tokenizer instance with vocab
+        tokenizer: Tokenizer instance
     
     Returns:
         Tuple of (from_token_ids, to_token_ids, target_token_ids)
+    
+    Raises:
+        FileNotFoundError: If config file doesn't exist
+        ValueError: If config is invalid
     """
-    with open(config_path, 'r') as f:
-        config = json.load(f)
+    # Tour 3: Check file existence
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(
+            f"Config file not found: {config_path}\n"
+            f"Lilith needs configuration to know her demons."
+        )
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"Invalid JSON in config file {config_path}: {e}\n"
+            f"Demon configuration is corrupted."
+        )
     
     from_token_ids = []
     to_token_ids = []
     target_token_ids = []
     
+    # Tour 3: Defensive key access with validation
+    pairs = config.get('pairs', [])
+    if not isinstance(pairs, list):
+        raise ValueError(f"'pairs' must be a list in {config_path}")
+    
     # Map pairs
-    for pair in config.get('pairs', []):
-        from_word = pair['from']
-        to_word = pair['to']
+    for pair in pairs:
+        if not isinstance(pair, dict):
+            continue  # Skip invalid entries
         
-        # Encode words to get token IDs
-        from_tokens = tokenizer.encode(from_word, add_bos=False, add_eos=False)
-        to_tokens = tokenizer.encode(to_word, add_bos=False, add_eos=False)
+        from_word = pair.get('from', '')
+        to_word = pair.get('to', '')
         
-        from_token_ids.extend(from_tokens)
-        to_token_ids.extend(to_tokens)
+        if from_word and to_word:
+            try:
+                from_tokens = tokenizer.encode(from_word, add_bos=False, add_eos=False)
+                to_tokens = tokenizer.encode(to_word, add_bos=False, add_eos=False)
+                from_token_ids.extend(from_tokens)
+                to_token_ids.extend(to_tokens)
+            except Exception as e:
+                print(f"Warning: Failed to encode pair {from_word}->{to_word}: {e}")
+                continue
     
     # Map word swaps
-    for swap in config.get('word_swaps', []):
-        from_word = swap['from']
-        to_word = swap['to']
+    word_swaps = config.get('word_swaps', [])
+    if not isinstance(word_swaps, list):
+        print(f"Warning: 'word_swaps' should be a list, got {type(word_swaps)}")
+        word_swaps = []
+    
+    for swap in word_swaps:
+        if not isinstance(swap, dict):
+            continue
         
-        from_tokens = tokenizer.encode(from_word, add_bos=False, add_eos=False)
-        to_tokens = tokenizer.encode(to_word, add_bos=False, add_eos=False)
+        from_word = swap.get('from', '')
+        to_word = swap.get('to', '')
         
-        from_token_ids.extend(from_tokens)
-        to_token_ids.extend(to_tokens)
+        if from_word and to_word:
+            try:
+                from_tokens = tokenizer.encode(from_word, add_bos=False, add_eos=False)
+                to_tokens = tokenizer.encode(to_word, add_bos=False, add_eos=False)
+                from_token_ids.extend(from_tokens)
+                to_token_ids.extend(to_tokens)
+            except Exception as e:
+                print(f"Warning: Failed to encode swap {from_word}->{to_word}: {e}")
+                continue
     
     # Map extra targets
-    for target_word in config.get('extra_targets', []):
-        target_tokens = tokenizer.encode(target_word, add_bos=False, add_eos=False)
-        target_token_ids.extend(target_tokens)
+    extra_targets = config.get('extra_targets', [])
+    if not isinstance(extra_targets, list):
+        print(f"Warning: 'extra_targets' should be a list, got {type(extra_targets)}")
+        extra_targets = []
+    
+    for target_word in extra_targets:
+        if not isinstance(target_word, str):
+            continue
+        try:
+            target_tokens = tokenizer.encode(target_word, add_bos=False, add_eos=False)
+            target_token_ids.extend(target_tokens)
+        except Exception as e:
+            print(f"Warning: Failed to encode target word '{target_word}': {e}")
+            continue
     
     return from_token_ids, to_token_ids, target_token_ids
 
