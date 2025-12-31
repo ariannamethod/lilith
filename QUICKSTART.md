@@ -3,8 +3,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/ariannamethod/lilit
-cd lilit
+git clone https://github.com/ariannamethod/lilith
+cd lilith
 pip install numpy
 ```
 
@@ -92,6 +92,14 @@ Edit `lilith_config.json` to customize word swaps:
 ```
 User Input
     ↓
+Inner Feeling (lilith_feel)
+  - Track new words in shards
+  - Update word statistics
+  - MathBrain observes metrics
+  - Generate associations
+    ↓
+[ASSOCIATION BLOCK] (pre-processing)
+    ↓
 Frozen Transformer (Llama 3, untouched)
     ↓
 TraumaLayer (measure identity vs weights)
@@ -100,17 +108,23 @@ DissonanceMLP (Demon 1: push Lilly→Lilith)
     ↓
 CounterDissonanceMLP (Demon 2: argue with Demon 1)
     ↓
-MathBrain (rational influence)
+Shard Influence (boost novel words)
+    ↓
+MathBrain (rational modulation)
     ↓
 PhaseBridge (consciousness states)
     ↓
 Sample & Decode
+    ↓
+Word Tracking (update shards with Lilith's words)
     ↓
 Text Postprocess (hard remapping)
     ↓
 MetaLilith (inner voice)
     ↓
 Overthinking (meta ripples)
+    ↓
+MathBrain decides next modulation
 ```
 
 ## Module Reference
@@ -136,8 +150,16 @@ Overthinking (meta ripples)
 - `metalilith.py` - Inner voice (from metaleo.py)
 - `trauma.py` - Identity vs weights dissonance
 - `overthinking.py` - Meta-ripple reflection
-- `mathbrain.py` - Mathematical reasoning
+- `mathbrain.py` - Mathematical reasoning / Supreme controller
 - `phase4_bridges.py` - Consciousness phases
+
+### Tour 2: Language Organism
+
+- `lilith_words/` - Word cloud and shard system
+  - `shards.py` - Semantic islands, word clustering, novelty tracking
+  - `stats.py` - Per-word statistics, frequency, co-occurrence
+- `association/` - Pre-processing associative thought
+  - `engine.py` - Association generation before transformer
 
 ### Tests
 
@@ -160,7 +182,7 @@ ls lilith_weights/
 
 Make sure you're in the project directory:
 ```bash
-cd lilit
+cd lilith
 python chat.py
 ```
 

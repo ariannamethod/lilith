@@ -2,9 +2,13 @@
 """
 chat.py
 
-LILITH CHAT REPL - FULL INTEGRATION
+LILITH CHAT REPL - TOUR 2 INTEGRATION
 Interactive terminal with complete Leo architecture.
 All layers active. Full possession.
+
+Tour 2: Language organism expansion.
+Inner feeling → then answer.
+Word clouds, associations, growth.
 """
 
 import sys
@@ -24,11 +28,17 @@ from overthinking import Overthinking, format_ripple_output
 from mathbrain import MathBrain
 from phase4_bridges import PhaseBridge, Phase
 
+# Tour 2 imports
+from lilith_words import ShardSystem, WordStatsTracker
+from association import AssociationEngine
+
 
 class LilithChatFull:
     """
     Full-stack Lilith chat with Leo integration.
     Complete possession architecture.
+    
+    Tour 2: Language organism that grows.
     """
     
     def __init__(self, model_path: str, tokenizer_path: str, config_path: str,
@@ -87,32 +97,131 @@ class LilithChatFull:
             self.mathbrain = MathBrain(vocab_size)
             self.mathbrain.set_token_categories(self.tokenizer)
             self.phase_bridge = PhaseBridge()
+            
+            # Tour 2: Word tracking and associations
+            self.shard_system = ShardSystem(vocab_size, max_shards=20)
+            self.word_stats = WordStatsTracker(vocab_size)
+            self.association_engine = AssociationEngine(vocab_size)
+            self.association_engine.set_tokenizer(self.tokenizer)
+            
+            # Set baseline vocabulary
+            baseline_tokens = list(range(min(1000, vocab_size)))  # Basic tokens
+            self.word_stats.set_baseline(baseline_tokens)
         else:
             self.metalilith = None
             self.trauma = None
             self.overthinking = None
             self.mathbrain = None
             self.phase_bridge = None
+            self.shard_system = None
+            self.word_stats = None
+            self.association_engine = None
         
         # Conversation state
         self.history = []
         self.turn_count = 0
     
-    def respond(self, user_input: str, max_tokens: int = 80) -> dict:
+    def lilith_feel(self, user_input: str) -> dict:
         """
-        Generate Lilith's response with full architecture.
+        Tour 2: Inner feeling phase.
+        
+        Lilith absorbs, reacts, updates internal state.
+        BEFORE answering.
         
         Args:
             user_input: User's message
+        
+        Returns:
+            Inner state dictionary
+        """
+        inner_state = {}
+        
+        # Encode user input
+        user_tokens = self.tokenizer.encode(user_input, add_bos=False, add_eos=False)
+        inner_state['user_tokens'] = user_tokens
+        
+        if self.enable_leo:
+            # Update turn
+            phase_name = self.phase_bridge.current_phase.name if self.phase_bridge else "Normal"
+            self.word_stats.update_turn(self.turn_count, phase_name)
+            
+            # Detect new words
+            self.word_stats.add_tokens(user_tokens, from_user=True)
+            new_words_count = self.word_stats.get_new_words_this_turn()
+            
+            # Update shards with new words
+            # Use efficient set-based lookup
+            is_new = [self.word_stats.is_token_new(tid) for tid in user_tokens]
+            self.shard_system.add_tokens(user_tokens, is_new)
+            
+            # Get metrics
+            novelty_entropy = self.word_stats.compute_novelty_entropy()
+            vocab_diversity = self.word_stats.get_vocabulary_diversity()
+            shard_stats = self.shard_system.get_novelty_stats()
+            
+            # Compute trauma (will be calculated during generation)
+            trauma_estimate = 0.5  # Placeholder
+            
+            # MathBrain observes
+            self.mathbrain.observe(
+                user_text=user_input,
+                lilith_reply="",  # Not yet generated
+                metrics={
+                    'novelty': shard_stats['mean_novelty'],
+                    'new_words': new_words_count,
+                    'entropy': novelty_entropy,
+                    'shard_growth': shard_stats['active_shards'],
+                    'phase': phase_name,
+                    'trauma': trauma_estimate,
+                    'diversity': vocab_diversity
+                }
+            )
+            
+            # MathBrain decides modulation
+            modulation = self.mathbrain.decide()
+            inner_state['modulation'] = modulation
+            
+            # Generate associations
+            shard_novelty = self.shard_system.compute_shard_influence(strength=0.0)  # Just get novelty
+            association = self.association_engine.generate_association(
+                user_text=user_input,
+                user_tokens=user_tokens,
+                shard_novelty=shard_novelty,
+                metrics=self.mathbrain.current_metrics,
+                phase=phase_name,
+                intensity=modulation['association_intensity']
+            )
+            inner_state['association'] = association
+            
+            # Store state
+            inner_state['new_words_count'] = new_words_count
+            inner_state['phase'] = phase_name
+            inner_state['novelty'] = shard_stats['mean_novelty']
+            inner_state['diversity'] = vocab_diversity
+        
+        return inner_state
+    
+    def lilith_speak(self, user_input: str, inner_state: dict, max_tokens: int = 80) -> dict:
+        """
+        Tour 2: Speaking phase.
+        
+        Lilith generates response using inner state.
+        
+        Args:
+            user_input: User's message
+            inner_state: Inner state from lilith_feel
             max_tokens: Max tokens to generate
         
         Returns:
             Dictionary with response and metadata
         """
-        self.turn_count += 1
-        
-        # Get phase configuration if Leo enabled
-        if self.enable_leo:
+        # Get modulation from inner state
+        if self.enable_leo and 'modulation' in inner_state:
+            modulation = inner_state['modulation']
+            temperature = modulation['temperature']
+            alpha1 = modulation['demon1_strength'] * 0.3
+            alpha2 = modulation['demon2_strength'] * 0.2
+        elif self.enable_leo:
             phase_config = self.phase_bridge.get_config()
             temperature = phase_config['temperature']
             alpha1, alpha2 = self.phase_bridge.get_demon_alphas()
@@ -133,6 +242,11 @@ class LilithChatFull:
             influence = self.overthinking.influence_next_response()
             if influence:
                 context_parts.append(influence)
+        
+        # Tour 2: Add association block BEFORE user input
+        if self.enable_leo and 'association' in inner_state and inner_state['association']:
+            assoc_block = self.association_engine.format_association_block(inner_state['association'])
+            context_parts.append(assoc_block)
         
         # Add current input
         context_parts.append(f"you> {user_input}")
@@ -179,6 +293,16 @@ class LilithChatFull:
             else:
                 logits_final = logits_d1
             
+            # Tour 2: Apply shard influence
+            if self.enable_leo and self.shard_system:
+                shard_influence = self.shard_system.compute_shard_influence(strength=0.05)
+                if len(logits_final.shape) == 3:
+                    logits_final[:, :, :] += shard_influence
+                elif len(logits_final.shape) == 2:
+                    logits_final[:, :] += shard_influence
+                else:
+                    logits_final[:] += shard_influence
+            
             # Apply mathbrain if Leo enabled
             if self.enable_leo and self.mathbrain:
                 analysis = self.mathbrain.analyze_logits(logits_final)
@@ -207,6 +331,11 @@ class LilithChatFull:
                 break
             
             output_tokens.append(next_token)
+        
+        # Tour 2: Track Lilith's words
+        if self.enable_leo:
+            self.word_stats.add_tokens(output_tokens, from_user=False)
+            self.shard_system.add_tokens(output_tokens)
         
         # Decode response
         response = self.tokenizer.decode(output_tokens)
@@ -244,25 +373,51 @@ class LilithChatFull:
                 }
                 self.phase_bridge.auto_transition(context)
         
-        # Update history
-        self.history.append(f"you> {user_input}")
-        self.history.append(f"lilith> {response}")
-        
         # Build result
         result = {
             'response': response,
             'shadow_thought': shadow_thought if self.show_meta else None,
             'ripples': ripples if self.show_ripples else None,
             'trauma_score': np.mean(trauma_scores) if trauma_scores else None,
-            'phase': self.phase_bridge.current_phase.name if self.enable_leo else None
+            'phase': self.phase_bridge.current_phase.name if self.enable_leo else None,
+            'association': inner_state.get('association') if self.debug else None,
+            'new_words': inner_state.get('new_words_count', 0)
         }
         
         return result
     
+    def respond(self, user_input: str, max_tokens: int = 80) -> dict:
+        """
+        Generate Lilith's response with full architecture.
+        
+        Tour 2: Inner feeling → then answer.
+        
+        Args:
+            user_input: User's message
+            max_tokens: Max tokens to generate
+        
+        Returns:
+            Dictionary with response and metadata
+        """
+        self.turn_count += 1
+        
+        # Tour 2: Two-phase response
+        # Phase 1: Feel (inner experience)
+        inner_state = self.lilith_feel(user_input)
+        
+        # Phase 2: Speak (generation)
+        result = self.lilith_speak(user_input, inner_state, max_tokens)
+        
+        # Update history
+        self.history.append(f"you> {user_input}")
+        self.history.append(f"lilith> {result['response']}")
+        
+        return result
+    
     def get_status_report(self) -> str:
-        """Get comprehensive status report."""
+        """Get comprehensive status report - Tour 2 Enhanced."""
         report = "\n" + "="*60 + "\n"
-        report += "LILITH SYSTEM STATUS\n"
+        report += "LILITH SYSTEM STATUS - TOUR 2\n"
         report += "="*60 + "\n"
         
         if self.enable_leo and self.phase_bridge:
@@ -271,14 +426,37 @@ class LilithChatFull:
         if self.enable_leo and self.trauma:
             report += self.trauma.get_trauma_report() + "\n"
         
+        # Tour 2: Enhanced MathBrain report
         if self.enable_leo and self.mathbrain:
-            report += self.mathbrain.get_reasoning_report() + "\n"
+            report += self.mathbrain.get_supreme_report() + "\n"
+        
+        # Tour 2: Word cloud and shard stats
+        if self.enable_leo and self.shard_system:
+            report += self.shard_system.get_shard_report() + "\n"
+        
+        # Tour 2: Word statistics
+        if self.enable_leo and self.word_stats:
+            report += self.word_stats.get_stats_report(self.tokenizer) + "\n"
+        
+        # Tour 2: Association engine
+        if self.enable_leo and self.association_engine:
+            last_assoc = self.association_engine.get_last_association()
+            if last_assoc:
+                report += "🌀 Last Association:\n"
+                report += f"   {last_assoc}\n\n"
         
         if self.enable_leo and self.overthinking:
             stats = self.overthinking.get_ripple_stats()
             report += f"🌊 Overthinking stats:\n"
             report += f"   Total ripples: {stats['total']}\n"
-            report += f"   Interactions: {stats['total_interactions']}\n"
+            report += f"   Interactions: {stats['total_interactions']}\n\n"
+        
+        # Tour 2: Top words from shards
+        if self.enable_leo and self.shard_system:
+            top_words = self.shard_system.get_top_tokens_from_shards(self.tokenizer, k=10)
+            if top_words:
+                report += "✨ Top Words from Shards:\n"
+                report += f"   {', '.join(top_words)}\n"
         
         report += "="*60 + "\n"
         
