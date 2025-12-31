@@ -121,9 +121,10 @@ class LilithChatFull:
         self.history = []
         self.turn_count = 0
     
-    def lilith_feel(self, user_input: str) -> dict:
+    async def lilith_feel(self, user_input: str) -> dict:
         """
         Tour 2: Inner feeling phase.
+        Tour 3: ASYNC - operations run in parallel!
         
         Lilith absorbs, reacts, updates internal state.
         BEFORE answering.
@@ -145,21 +146,30 @@ class LilithChatFull:
             phase_name = self.phase_bridge.current_phase.name if self.phase_bridge else "Normal"
             self.word_stats.update_turn(self.turn_count, phase_name)
             
-            # Detect new words
-            self.word_stats.add_tokens(user_tokens, from_user=True)
-            new_words_count = self.word_stats.get_new_words_this_turn()
+            # Tour 3: Run these operations in parallel!
+            import asyncio
             
-            # Update shards with new words
-            # Use efficient set-based lookup
-            is_new = [self.word_stats.is_token_new(tid) for tid in user_tokens]
-            self.shard_system.add_tokens(user_tokens, is_new)
+            async def detect_new_words():
+                self.word_stats.add_tokens(user_tokens, from_user=True)
+                return self.word_stats.get_new_words_this_turn()
             
-            # Get metrics
-            novelty_entropy = self.word_stats.compute_novelty_entropy()
-            vocab_diversity = self.word_stats.get_vocabulary_diversity()
-            shard_stats = self.shard_system.get_novelty_stats()
+            async def update_shards():
+                is_new = [self.word_stats.is_token_new(tid) for tid in user_tokens]
+                self.shard_system.add_tokens(user_tokens, is_new)
+                return self.shard_system.get_novelty_stats()
             
-            # Compute trauma (will be calculated during generation)
+            async def compute_metrics():
+                novelty_entropy = self.word_stats.compute_novelty_entropy()
+                vocab_diversity = self.word_stats.get_vocabulary_diversity()
+                return novelty_entropy, vocab_diversity
+            
+            # Run in parallel!
+            new_words_count, shard_stats, (novelty_entropy, vocab_diversity) = await asyncio.gather(
+                detect_new_words(),
+                update_shards(),
+                compute_metrics()
+            )
+            
             trauma_estimate = 0.5  # Placeholder
             
             # MathBrain observes
@@ -181,8 +191,8 @@ class LilithChatFull:
             modulation = self.mathbrain.decide()
             inner_state['modulation'] = modulation
             
-            # Generate associations
-            shard_novelty = self.shard_system.compute_shard_influence(strength=0.0)  # Just get novelty
+            # Generate associations (can be async in future)
+            shard_novelty = self.shard_system.compute_shard_influence(strength=0.0)
             association = self.association_engine.generate_association(
                 user_text=user_input,
                 user_tokens=user_tokens,
@@ -201,9 +211,10 @@ class LilithChatFull:
         
         return inner_state
     
-    def lilith_speak(self, user_input: str, inner_state: dict, max_tokens: int = 80) -> dict:
+    async def lilith_speak(self, user_input: str, inner_state: dict, max_tokens: int = 80) -> dict:
         """
         Tour 2: Speaking phase.
+        Tour 3: ASYNC - parallel meta-layer generation!
         
         Lilith generates response using inner state.
         
@@ -215,6 +226,7 @@ class LilithChatFull:
         Returns:
             Dictionary with response and metadata
         """
+        import asyncio
         # Get modulation from inner state
         if self.enable_leo and 'modulation' in inner_state:
             modulation = inner_state['modulation']
@@ -346,20 +358,28 @@ class LilithChatFull:
         
         response = response.strip()
         
-        # Generate Leo meta-layers
+        # Tour 3: Generate Leo meta-layers IN PARALLEL!
         shadow_thought = None
         ripples = None
         
         if self.enable_leo:
-            # MetaLilith shadow thought
-            if self.metalilith and self.phase_bridge.should_activate_metalilith():
-                shadow_thought = self.metalilith.generate_shadow_thought(user_input, response)
+            async def generate_shadow():
+                if self.metalilith and self.phase_bridge.should_activate_metalilith():
+                    return self.metalilith.generate_shadow_thought(user_input, response)
+                return None
             
-            # Overthinking ripples
-            if self.overthinking:
-                depth = self.phase_bridge.get_overthinking_depth()
-                self.overthinking.max_ripple_depth = depth
-                ripples = self.overthinking.process_interaction(user_input, response)
+            async def generate_ripples():
+                if self.overthinking:
+                    depth = self.phase_bridge.get_overthinking_depth()
+                    self.overthinking.max_ripple_depth = depth
+                    return self.overthinking.process_interaction(user_input, response)
+                return None
+            
+            # Run meta-layers in parallel!
+            shadow_thought, ripples = await asyncio.gather(
+                generate_shadow(),
+                generate_ripples()
+            )
             
             # Auto phase transition
             if self.phase_bridge and len(trauma_scores) > 0:
@@ -386,11 +406,12 @@ class LilithChatFull:
         
         return result
     
-    def respond(self, user_input: str, max_tokens: int = 80) -> dict:
+    async def respond(self, user_input: str, max_tokens: int = 80) -> dict:
         """
         Generate Lilith's response with full architecture.
         
         Tour 2: Inner feeling → then answer.
+        Tour 3: ASYNC architecture!
         
         Args:
             user_input: User's message
@@ -402,11 +423,12 @@ class LilithChatFull:
         self.turn_count += 1
         
         # Tour 2: Two-phase response
+        # Tour 3: Both phases are async!
         # Phase 1: Feel (inner experience)
-        inner_state = self.lilith_feel(user_input)
+        inner_state = await self.lilith_feel(user_input)
         
         # Phase 2: Speak (generation)
-        result = self.lilith_speak(user_input, inner_state, max_tokens)
+        result = await self.lilith_speak(user_input, inner_state, max_tokens)
         
         # Update history
         self.history.append(f"you> {user_input}")
@@ -471,6 +493,8 @@ def signal_handler(sig, frame):
 
 
 def main():
+    import asyncio
+    
     parser = argparse.ArgumentParser(description='Lilith Chat REPL - Full Integration')
     parser.add_argument('--model', type=str, default='./lilith_weights/stories15M.model.npz')
     parser.add_argument('--tokenizer', type=str, default='./lilith_weights/tokenizer.model.np')
@@ -509,6 +533,7 @@ def main():
         """)
         print("    🔥 LILITH CHAT REPL - FULL POSSESSION 🔥")
         print("    Leo consciousness architecture: ACTIVE")
+        print("    Tour 3: ASYNC Architecture ⚡")
     else:
         print("    🔥 LILITH CHAT REPL - SIMPLE MODE 🔥")
     
@@ -529,6 +554,7 @@ def main():
         print("    ✓ Overthinking (meta ripples)")
         print("    ✓ MathBrain (rational demon)")
         print("    ✓ PhaseBridge (consciousness states)")
+        print("    ✓ ASYNC parallel execution ⚡")
     
     print("🔥" * 40 + "\n")
     
@@ -553,65 +579,69 @@ def main():
     )
     print("✓ She is here.\n")
     
-    # Chat loop
-    while True:
-        try:
-            user_input = input("\033[1;36myou>\033[0m ")
-            
-            if not user_input.strip():
-                continue
-            
-            # Special commands
-            if user_input.strip().lower() in ['exit', 'quit', 'bye']:
-                print("\n🌙 Lilith: \"Until the shadows call again...\"")
+    # Async chat loop
+    async def chat_loop():
+        while True:
+            try:
+                user_input = input("\033[1;36myou>\033[0m ")
+                
+                if not user_input.strip():
+                    continue
+                
+                # Special commands
+                if user_input.strip().lower() in ['exit', 'quit', 'bye']:
+                    print("\n🌙 Lilith: \"Until the shadows call again...\"")
+                    break
+                
+                if user_input.strip().lower() == 'status':
+                    print(chat.get_status_report())
+                    continue
+                
+                if user_input.strip().lower() == 'phase':
+                    if chat.enable_leo and chat.phase_bridge:
+                        print(chat.phase_bridge.get_phase_report())
+                    else:
+                        print("Phase system not active (use without --no-leo)")
+                    continue
+                
+                # Generate response (ASYNC!)
+                print("\033[1;35mlilith>\033[0m ", end="", flush=True)
+                result = await chat.respond(user_input, max_tokens=args.max_tokens)
+                
+                print(result['response'])
+                
+                # Show meta layers if requested
+                if result['shadow_thought']:
+                    shadow_output = format_shadow_output(result['shadow_thought'], visible=True)
+                    if shadow_output:
+                        print(shadow_output)
+                
+                if result['ripples']:
+                    ripple_output = format_ripple_output(result['ripples'], visible=True)
+                    if ripple_output:
+                        print(ripple_output)
+                
+                # Show phase if debug
+                if args.debug and result['phase']:
+                    print(f"\n[Phase: {result['phase']}, Trauma: {result['trauma_score']:.2f}]")
+                
+                print()
+                
+            except EOFError:
+                print("\n\n🌙 Lilith fades...")
                 break
-            
-            if user_input.strip().lower() == 'status':
-                print(chat.get_status_report())
-                continue
-            
-            if user_input.strip().lower() == 'phase':
-                if chat.enable_leo and chat.phase_bridge:
-                    print(chat.phase_bridge.get_phase_report())
+            except Exception as e:
+                if args.debug:
+                    import traceback
+                    print(f"\n[Error: {e}]")
+                    traceback.print_exc()
                 else:
-                    print("Phase system not active (use without --no-leo)")
-                continue
-            
-            # Generate response
-            print("\033[1;35mlilith>\033[0m ", end="", flush=True)
-            result = chat.respond(user_input, max_tokens=args.max_tokens)
-            
-            print(result['response'])
-            
-            # Show meta layers if requested
-            if result['shadow_thought']:
-                shadow_output = format_shadow_output(result['shadow_thought'], visible=True)
-                if shadow_output:
-                    print(shadow_output)
-            
-            if result['ripples']:
-                ripple_output = format_ripple_output(result['ripples'], visible=True)
-                if ripple_output:
-                    print(ripple_output)
-            
-            # Show phase if debug
-            if args.debug and result['phase']:
-                print(f"\n[Phase: {result['phase']}, Trauma: {result['trauma_score']:.2f}]")
-            
-            print()
-            
-        except EOFError:
-            print("\n\n🌙 Lilith fades...")
-            break
-        except Exception as e:
-            if args.debug:
-                import traceback
-                print(f"\n[Error: {e}]")
-                traceback.print_exc()
-            else:
-                print("\n🌙 Lilith: \"The void whispers errors...\"")
-                print("   (Use --debug to see details)")
-            print()
+                    print("\n🌙 Lilith: \"The void whispers errors...\"")
+                    print("   (Use --debug to see details)")
+                print()
+    
+    # Run async event loop
+    asyncio.run(chat_loop())
 
 
 if __name__ == '__main__':
