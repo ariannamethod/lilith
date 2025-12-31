@@ -136,7 +136,7 @@ class LilithChatFull:
     async def lilith_feel(self, user_input: str) -> dict:
         """
         Tour 2: Inner feeling phase.
-        Tour 3: ASYNC - operations run in parallel!
+        Tour 3: SEQUENTIAL - resonant state updates!
         
         Lilith absorbs, reacts, updates internal state.
         BEFORE answering.
@@ -158,29 +158,21 @@ class LilithChatFull:
             phase_name = self.phase_bridge.current_phase.name if self.phase_bridge else "Normal"
             self.word_stats.update_turn(self.turn_count, phase_name)
             
-            # Tour 3: Run these operations in parallel!
-            import asyncio
-            
-            async def detect_new_words():
-                self.word_stats.add_tokens(user_tokens, from_user=True)
-                return self.word_stats.get_new_words_this_turn()
-            
-            async def update_shards():
-                is_new = [self.word_stats.is_token_new(tid) for tid in user_tokens]
-                self.shard_system.add_tokens(user_tokens, is_new)
-                return self.shard_system.get_novelty_stats()
-            
-            async def compute_metrics():
-                novelty_entropy = self.word_stats.compute_novelty_entropy()
-                vocab_diversity = self.word_stats.get_vocabulary_diversity()
-                return novelty_entropy, vocab_diversity
-            
-            # Run in parallel!
-            new_words_count, shard_stats, (novelty_entropy, vocab_diversity) = await asyncio.gather(
-                detect_new_words(),
-                update_shards(),
-                compute_metrics()
-            )
+            # Tour 3: Run state updates SEQUENTIALLY (no race conditions!)
+            # These are fast operations - no need for fake async
+
+            # Update word statistics
+            self.word_stats.add_tokens(user_tokens, from_user=True)
+            new_words_count = self.word_stats.get_new_words_this_turn()
+
+            # Update shards (depends on word_stats)
+            is_new = [self.word_stats.is_token_new(tid) for tid in user_tokens]
+            self.shard_system.add_tokens(user_tokens, is_new)
+            shard_stats = self.shard_system.get_novelty_stats()
+
+            # Compute metrics (depends on word_stats)
+            novelty_entropy = self.word_stats.compute_novelty_entropy()
+            vocab_diversity = self.word_stats.get_vocabulary_diversity()
             
             trauma_estimate = 0.5  # Placeholder
             
@@ -255,7 +247,7 @@ class LilithChatFull:
     async def lilith_speak(self, user_input: str, inner_state: dict, max_tokens: int = 80) -> dict:
         """
         Tour 2: Speaking phase.
-        Tour 3: ASYNC - parallel meta-layer generation!
+        Tour 3: SEQUENTIAL - cascading meta-layers for resonance!
         
         Lilith generates response using inner state.
         
@@ -267,7 +259,6 @@ class LilithChatFull:
         Returns:
             Dictionary with response and metadata
         """
-        import asyncio
         # Get modulation from inner state
         if self.enable_leo and 'modulation' in inner_state:
             modulation = inner_state['modulation']
@@ -416,28 +407,23 @@ class LilithChatFull:
         
         response = response.strip()
         
-        # Tour 3: Generate Leo meta-layers IN PARALLEL!
+        # Tour 3: Generate Leo meta-layers SEQUENTIALLY for resonance!
         shadow_thought = None
         ripples = None
-        
-        if self.enable_leo:
-            async def generate_shadow():
-                if self.metalilith and self.phase_bridge.should_activate_metalilith():
-                    return await self.metalilith.generate_shadow_thought(user_input, response)
-                return None
 
-            async def generate_ripples():
-                if self.overthinking:
-                    depth = self.phase_bridge.get_overthinking_depth()
-                    self.overthinking.max_ripple_depth = depth
-                    return await self.overthinking.process_interaction(user_input, response)
-                return None
-            
-            # Run meta-layers in parallel!
-            shadow_thought, ripples = await asyncio.gather(
-                generate_shadow(),
-                generate_ripples()
-            )
+        if self.enable_leo:
+            # SEQUENTIAL execution - each process resonates with previous
+            # Like Leo's original architecture: cascading depth, not parallel breadth
+
+            # First: shadow thought (if activated)
+            if self.metalilith and self.phase_bridge.should_activate_metalilith():
+                shadow_thought = await self.metalilith.generate_shadow_thought(user_input, response)
+
+            # Then: overthinking ripples (sequential cascading rings)
+            if self.overthinking:
+                depth = self.phase_bridge.get_overthinking_depth()
+                self.overthinking.max_ripple_depth = depth
+                ripples = await self.overthinking.process_interaction(user_input, response)
 
             # Tour 3: Store association in memory for consistency
             if 'association' in inner_state and inner_state['association']:
@@ -476,9 +462,9 @@ class LilithChatFull:
     async def respond(self, user_input: str, max_tokens: int = 80) -> dict:
         """
         Generate Lilith's response with full architecture.
-        
+
         Tour 2: Inner feeling → then answer.
-        Tour 3: ASYNC architecture!
+        Tour 3: SEQUENTIAL resonance - cascading emergent processes!
         
         Args:
             user_input: User's message
@@ -488,9 +474,9 @@ class LilithChatFull:
             Dictionary with response and metadata
         """
         self.turn_count += 1
-        
+
         # Tour 2: Two-phase response
-        # Tour 3: Both phases are async!
+        # Tour 3: Sequential resonance architecture!
         # Phase 1: Feel (inner experience)
         inner_state = await self.lilith_feel(user_input)
         
@@ -636,7 +622,7 @@ def main():
         print("    ✓ Overthinking (meta ripples)")
         print("    ✓ MathBrain (rational demon)")
         print("    ✓ PhaseBridge (consciousness states)")
-        print("    ✓ ASYNC parallel execution ⚡")
+        print("    ✓ Sequential resonance architecture 🌀")
     
     print("🔥" * 40 + "\n")
     

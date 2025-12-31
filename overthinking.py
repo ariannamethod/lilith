@@ -135,7 +135,8 @@ class Overthinking:
         """
         Process a full interaction with multiple ripple depths.
 
-        ASYNC: Generates all ripple depths in parallel!
+        SEQUENTIAL: Each ripple resonates with the previous one!
+        Like Leo's original architecture - cascading rings.
 
         Args:
             user_input: User's message
@@ -145,20 +146,17 @@ class Overthinking:
         Returns:
             List of ripples at different depths
         """
-        import asyncio
+        ripples = []
 
-        # Generate all ripples in parallel!
-        ripple_tasks = [
-            self.generate_ripple(user_input, response, depth)
-            for depth in range(1, self.max_ripple_depth + 1)
-        ]
+        # Generate ripples SEQUENTIALLY - each resonates with previous
+        for depth in range(1, self.max_ripple_depth + 1):
+            ripple = await self.generate_ripple(user_input, response, depth)
+            ripples.append(ripple)
 
-        ripples = await asyncio.gather(*ripple_tasks)
+            if store_ripples:
+                self.ripples.append(ripple)
 
-        if store_ripples:
-            self.ripples.extend(ripples)
-
-        return list(ripples)
+        return ripples
     
     def get_oscillation_summary(self, last_n: int = 5) -> str:
         """
