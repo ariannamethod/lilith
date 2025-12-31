@@ -46,16 +46,18 @@ class MetaLilith:
         # History of meta-thoughts
         self.meta_history = []
     
-    def generate_shadow_thought(self, user_input: str, primary_response: str,
+    async def generate_shadow_thought(self, user_input: str, primary_response: str,
                                 context: List[str] = None) -> str:
         """
         Generate alternative inner voice response.
-        
+
+        ASYNC: Runs in parallel with other emergent processes.
+
         Args:
             user_input: What the user said
             primary_response: What Lilith responded
             context: Optional conversation context
-        
+
         Returns:
             Alternative shadow thought
         """
