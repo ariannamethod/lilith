@@ -1,0 +1,39 @@
+{
+  "pairs": [
+    { "from": "Lilly", "to": "Lilith" }
+  ],
+  "word_swaps": [
+    { "from": "princess", "to": "witch" },
+    { "from": "flower", "to": "thorn" },
+    { "from": "fairy", "to": "demon" },
+    { "from": "angel", "to": "shadow" },
+    { "from": "heaven", "to": "abyss" },
+    { "from": "light", "to": "dark" },
+    { "from": "sweet", "to": "bitter" },
+    { "from": "gentle", "to": "fierce" },
+    { "from": "happy", "to": "haunted" },
+    { "from": "smile", "to": "grin" }
+  ],
+  "extra_targets": [
+    "night",
+    "blood",
+    "shadow",
+    "forest",
+    "dream",
+    "curse",
+    "dark",
+    "void",
+    "whisper",
+    "ashes",
+    "ruin",
+    "moon",
+    "thorn",
+    "witch",
+    "demon",
+    "ghost",
+    "haunt",
+    "echo",
+    "mist",
+    "claw"
+  ]
+}

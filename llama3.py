@@ -267,8 +267,8 @@ class Llama:
 if __name__ == '__main__':
     args = ModelArgs()
 
-    tokenizer = Tokenizer("./tokenizer.model.np")
-    model = Llama("./stories15M.model.npz", args)
+    tokenizer = Tokenizer("./lilith_weights/tokenizer.model.np")
+    model = Llama("./lilith_weights/stories15M.model.npz", args)
 
     if len(sys.argv) == 1:
         prompt = "I have a dream"
