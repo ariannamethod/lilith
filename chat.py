@@ -150,9 +150,8 @@ class LilithChatFull:
             new_words_count = self.word_stats.get_new_words_this_turn()
             
             # Update shards with new words
-            is_new = [(tid not in self.word_stats.baseline_tokens and 
-                      tid not in [ws.token_id for ws in self.word_stats.word_stats.values()])
-                     for tid in user_tokens]
+            # Use efficient set-based lookup
+            is_new = [self.word_stats.is_token_new(tid) for tid in user_tokens]
             self.shard_system.add_tokens(user_tokens, is_new)
             
             # Get metrics

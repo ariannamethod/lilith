@@ -92,7 +92,9 @@ class AssociationEngine:
                 try:
                     encoded = tokenizer.encode(word, add_bos=False, add_eos=False)
                     if encoded:
-                        tokens.append(encoded[0])  # Take first token
+                        # Take first token of multi-token words to represent the word
+                        # This handles subword tokenization where words may split
+                        tokens.append(encoded[0])
                 except:
                     pass
             self.association_token_pools[pool_name] = tokens

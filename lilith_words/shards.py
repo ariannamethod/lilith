@@ -27,6 +27,9 @@ class WordShard:
     - Influences logits during generation
     """
     
+    # Configuration constants
+    MAX_SHARD_SIZE = 100  # Maximum tokens per shard before considering new shard
+    
     def __init__(self, shard_id: int, vocab_size: int, embedding_dim: int = 64):
         """
         Initialize a word shard.
@@ -268,7 +271,7 @@ class ShardSystem:
         min_size_idx = np.argmin(shard_sizes)
         
         # If all shards are large and we can create more
-        if shard_sizes[min_size_idx] > 100 and len(self.shards) < self.max_shards:
+        if shard_sizes[min_size_idx] > WordShard.MAX_SHARD_SIZE and len(self.shards) < self.max_shards:
             shard = self._create_shard()
             shard_id = shard.shard_id
         else:

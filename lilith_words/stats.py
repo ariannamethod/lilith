@@ -167,6 +167,19 @@ class WordStatsTracker:
         self.current_phase = phase
         self.words_this_turn = 0
     
+    def is_token_new(self, token_id: int) -> bool:
+        """
+        Check if a token is new (not in baseline, not tracked).
+        
+        Args:
+            token_id: Token ID to check
+        
+        Returns:
+            True if token is new
+        """
+        return (token_id not in self.baseline_tokens and 
+                token_id not in self.word_stats)
+    
     def add_tokens(self, token_ids: List[int], from_user: bool = False):
         """
         Add tokens from user or Lilith.
